@@ -2,7 +2,7 @@ A package for [Amazon Advertising API](https://advertising.amazon.com/API/docs/e
 
 ## Installing
 ```shell script
-go get -u github.com/gzp233/amazon-advertising
+go get -u github.com/gzp233/amazon_advertising
 ```
 
 This will retrieve the library.
