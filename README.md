@@ -10,6 +10,12 @@ This will retrieve the library.
 ## example
 
 ```go
+package main
 
+import "fmt"
+
+func main() {
+    fmt.Println("todo")
+}
 ```
 
