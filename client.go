@@ -22,7 +22,6 @@ import (
 
 const (
 	apiTokenUrl = "https://api.amazon.com/auth/o2/token"
-	apiVersion  = "v2"
 	MAX_RETRIES = 3
 )
 
@@ -48,7 +47,7 @@ type Client struct {
 }
 
 func (c *Client) getUri(url string) string {
-	return fmt.Sprintf("%s/%s%s", c.Endpoint, apiVersion, url)
+	return fmt.Sprintf("%s%s", c.Endpoint, url)
 }
 
 func (c *Client) getHeader() gout.H {
@@ -76,18 +75,27 @@ func (c *Client) HttpGet(url string, query ...interface{}) (*Response, error) {
 }
 
 func (c *Client) HttpPost(url string, params interface{}) (*Response, error) {
+	if params == nil {
+		params = gout.H{}
+	}
 	return c.handleRequest(gout.POST(c.getUri(url)).SetJSON(params))
 }
 
-func (c *Client) HttpDownload(location string) (*Response, error) {
+func (c *Client) GetReport(reportId string) (*Response, error) {
+	url := fmt.Sprintf("/v2/reports/%s", reportId)
+	return c.HttpGet(url)
+}
+
+func (c *Client) DownloadReportData(reportId string) (*Response, error) {
 	r := &Response{}
 	var bs []byte
-	err := gout.GET(location).Debug(c.Debug).SetHeader(c.getHeader()).BindBody(&bs).Code(&r.StatusCode).Do()
+	url := fmt.Sprintf("/v2/reports/%s/download", reportId)
+	err := gout.GET(c.getUri(url)).Debug(c.Debug).SetHeader(c.getHeader()).BindBody(&bs).Code(&r.StatusCode).Do()
 	if err != nil {
 		return nil, err
 	}
 	if r.StatusCode >= 400 {
-		return r, errors.New(r.Body)
+		return r, fmt.Errorf("request error:%s", bs)
 	}
 
 	// 解析gz二进制数据
@@ -114,7 +122,7 @@ func (c *Client) HttpDownload(location string) (*Response, error) {
 func (c *Client) handleRequest(d *dataflow.DataFlow) (*Response, error) {
 	r := &Response{}
 	err := d.Debug(c.Debug).SetHeader(c.getHeader()).BindBody(&r.Body).Code(&r.StatusCode).F().
-		Retry().Attempt(MAX_RETRIES).WaitTime(10 * time.Millisecond).MaxWaitTime(50 * time.Millisecond).
+		Retry().Attempt(MAX_RETRIES).WaitTime(2 * time.Second).MaxWaitTime(5 * time.Second).
 		Func(func(ctx *dataflow.Context) error {
 			if ctx.Error != nil {
 				if ctx.Code == 401 {
