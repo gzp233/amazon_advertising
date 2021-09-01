@@ -28,6 +28,7 @@ const (
 type Response struct {
 	StatusCode int
 	Body       string
+	Header http.Header
 }
 
 type ClientOption struct {
@@ -90,7 +91,8 @@ func (c *Client) DownloadReportData(reportId string) (*Response, error) {
 	r := &Response{}
 	var bs []byte
 	url := fmt.Sprintf("/v2/reports/%s/download", reportId)
-	err := gout.GET(c.getUri(url)).Debug(c.Debug).SetHeader(c.getHeader()).BindBody(&bs).Code(&r.StatusCode).Do()
+	err := gout.GET(c.getUri(url)).Debug(c.Debug).SetHeader(c.getHeader()).
+		BindHeader(&r.Header).BindBody(&bs).Code(&r.StatusCode).Do()
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +123,7 @@ func (c *Client) DownloadReportData(reportId string) (*Response, error) {
 // 处理请求,增加重试条件
 func (c *Client) handleRequest(d *dataflow.DataFlow) (*Response, error) {
 	r := &Response{}
-	err := d.Debug(c.Debug).SetHeader(c.getHeader()).BindBody(&r.Body).Code(&r.StatusCode).F().
+	err := d.Debug(c.Debug).SetHeader(c.getHeader()).BindHeader(&r.Header).BindBody(&r.Body).Code(&r.StatusCode).F().
 		Retry().Attempt(MAX_RETRIES).WaitTime(2 * time.Second).MaxWaitTime(5 * time.Second).
 		Func(func(ctx *dataflow.Context) error {
 			if ctx.Error != nil {
