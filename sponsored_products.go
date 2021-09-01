@@ -41,3 +41,7 @@ func (c *Client) SpRequestReport(recordType, params interface{}) (*Response, err
 	url := fmt.Sprintf("/v2/sp/%s/report", recordType)
 	return c.HttpPost(url, params)
 }
+
+func (c *Client) SpRequestAsinReport(params interface{}) (*Response, error) {
+	return c.HttpPost("/v2/asins/report", params)
+}
